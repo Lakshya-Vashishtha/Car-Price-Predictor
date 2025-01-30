@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Car Price Prediction</title>
+    <script>
+        function filterModels() {
+            const carCompany = document.getElementById('carCompany').value;
+            const models = JSON.parse(document.getElementById('modelsData').textContent);
+            const modelSelect = document.getElementById('carModel');
+
+            // Clear previous options
+            modelSelect.innerHTML = '<option value="">Select Model</option>';
+
+            if (models[carCompany]) {
+                const uniqueModels = [...new Set(models[carCompany])];
+                uniqueModels.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    modelSelect.appendChild(option);
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('prediction-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const formData = new FormData(this);
+
+                fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        document.getElementById('price-value').innerText = data.price;
+                        document.getElementById('predicted-price').style.display = 'block';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="video-background">
+        <video src="{{ url_for('static', filename='jdm-cars-need-for-speed-heat-moewalls-com.mp4') }}" autoplay muted loop></video>
+        <div class="heading">
+            <h1>Car Price Prediction</h1>
+        </div>
+    </div>
+    <div class="form-container">
+        <form id="prediction-form">
+            <label for="carCompany">Car Company:</label>
+            <select id="carCompany" name="car_company" onchange="filterModels()" required>
+                <option value="">Select Company</option>
+                {% for company in car_companies %}
+                    <option value="{{ company }}">{{ company }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="carModel">Car Model:</label>
+            <select id="carModel" name="car_model" required>
+                <option value="">Select Model</option>
+            </select>
+
+            <label for="year">Year:</label>
+            <select id="year" name="year" required>
+                <option value="">Select Year</option>
+                {% for yr in years %}
+                    <option value="{{ yr }}">{{ yr }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="kmDriven">Kilometers Driven:</label>
+            <input type="number" id="kmDriven" name="km_driven" placeholder="Enter kilometers" required>
+
+            <label for="fuelType">Fuel Type:</label>
+            <select id="fuelType" name="fuel_type" required>
+                <option value="">Select Fuel Type</option>
+                {% for fuel in fuel_types %}
+                    <option value="{{ fuel }}">{{ fuel }}</option>
+                {% endfor %}
+            </select>
+
+            <button id="predictButton" type="submit">Predict</button>
+        </form>
+    </div>
+    <script id="modelsData" type="application/json">
+        {{ car_models | tojson | safe }}
+    </script>
+    <div id="predicted-price" style="display:none;">
+        <h3>Predicted Price in ₹: <span id="price-value"></span></h3>
+    </div>
+</body>
+</html>
